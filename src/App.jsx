@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
-const API_BASE_URL =
+const RAW_API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'https://backend-dog-9e63.onrender.com'
 
 const STATUS_POLL_INTERVAL = 15000
@@ -8,6 +8,26 @@ const STATUS_POLL_INTERVAL = 15000
 function getMachineFromQuery() {
   const params = new URLSearchParams(window.location.search)
   return params.get('maquina') || 'dog1'
+}
+
+function getApiBaseUrl() {
+  if (typeof window === 'undefined') {
+    return RAW_API_BASE_URL
+  }
+
+  try {
+    const parsedUrl = new URL(RAW_API_BASE_URL, window.location.origin)
+    const isLocalApi =
+      parsedUrl.hostname === 'localhost' || parsedUrl.hostname === '127.0.0.1'
+
+    if (import.meta.env.DEV && isLocalApi) {
+      return '/api'
+    }
+
+    return parsedUrl.toString()
+  } catch {
+    return RAW_API_BASE_URL
+  }
 }
 
 function formatLastSeen(value) {
@@ -47,12 +67,17 @@ function formatCountdown(targetDate) {
 }
 
 function buildUrl(path, params) {
-  const url = new URL(path, API_BASE_URL)
+  const apiBaseUrl = getApiBaseUrl()
+  const url = apiBaseUrl.startsWith('http')
+    ? new URL(path, apiBaseUrl)
+    : new URL(`${apiBaseUrl}${path}`, window.location.origin)
+
   Object.entries(params).forEach(([key, value]) => {
     if (value !== null && value !== undefined && value !== '') {
       url.searchParams.set(key, value)
     }
   })
+
   return url.toString()
 }
 
