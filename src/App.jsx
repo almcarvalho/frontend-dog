@@ -850,7 +850,6 @@ export default function App() {
         <div className="title-row">
           <div>
             <div className="brand-row">
-              <img className="dog-icon" src="/icondog.png" alt="" aria-hidden="true" />
               <h1>Doguinho App</h1>
             </div>
             {nextReleaseText ? (
@@ -879,6 +878,8 @@ export default function App() {
           Um projeto open source para dispensar racao para animais desenvolvido por
           Lucas Carvalho @br.lcsistemas.
         </p>
+
+        <img className="dog-hero-icon" src="/icondog.png" alt="" aria-hidden="true" />
 
         {loading ? <p className="info-text">Carregando status...</p> : null}
         {error ? <p className="feedback error">{error}</p> : null}
