@@ -850,9 +850,7 @@ export default function App() {
         <div className="title-row">
           <div>
             <div className="brand-row">
-              <span className="dog-icon" aria-hidden="true">
-                🐶
-              </span>
+              <img className="dog-icon" src="/icondog.png" alt="" aria-hidden="true" />
               <h1>Doguinho App</h1>
             </div>
             {nextReleaseText ? (
