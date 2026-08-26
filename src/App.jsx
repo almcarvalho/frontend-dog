@@ -405,6 +405,7 @@ export default function App() {
   const [machine, setMachine] = useState(() => getInitialMachine())
   const [savedMachine, setSavedMachine] = useState(() => getInitialMachine())
   const [showMachineField, setShowMachineField] = useState(() => !getInitialMachine())
+  const [showMachineSelect, setShowMachineSelect] = useState(false)
   const [defaultQuantity, setDefaultQuantity] = useState(() =>
     getQuantityForMachine(getInitialMachine()),
   )
@@ -437,14 +438,9 @@ export default function App() {
     Number.isFinite(quantitySeconds) && quantitySeconds > 0
       ? Math.round(quantitySeconds * 1000)
       : DEFAULT_TEMPO_MS
-  const machineSuggestions = useMemo(
-    () =>
-      machineHistory.filter(
-        (historyMachine) =>
-          historyMachine !== normalizedMachine &&
-          historyMachine.toLowerCase().includes(normalizedMachine.toLowerCase()),
-      ),
-    [machineHistory, normalizedMachine],
+  const selectableMachines = useMemo(
+    () => buildNextHistory(savedMachine, machineHistory),
+    [savedMachine, machineHistory],
   )
 
   useEffect(() => {
@@ -456,6 +452,7 @@ export default function App() {
   useEffect(() => {
     if (activeMachine) {
       setShowMachineField(false)
+      setShowMachineSelect(false)
     }
   }, [activeMachine])
 
@@ -713,6 +710,7 @@ export default function App() {
     setMachineHistory(nextHistory)
     saveMachineHistory(nextHistory)
     setShowMachineField(false)
+    setShowMachineSelect(false)
   }
 
   function persistAccess() {
@@ -759,12 +757,7 @@ export default function App() {
     saveMachineHistory(nextHistory)
     setDefaultQuantity(getQuantityForMachine(nextMachine))
     setShowMachineField(false)
-  }
-
-  function handleMachineSuggestionRemove(machineToRemove) {
-    const nextHistory = machineHistory.filter((item) => item !== machineToRemove)
-    setMachineHistory(nextHistory)
-    saveMachineHistory(nextHistory)
+    setShowMachineSelect(false)
   }
 
   const online = Boolean(status?.online)
@@ -805,6 +798,26 @@ export default function App() {
             </label>
           ) : null}
 
+          {showMachineSelect ? (
+            <label className="machine-field">
+              <span>Selecionar maquina</span>
+              <select
+                value={activeMachine}
+                onChange={(event) => handleMachineSuggestionClick(event.target.value)}
+                disabled={!selectableMachines.length}
+              >
+                {selectableMachines.length ? null : (
+                  <option value="">Nenhuma maquina em memoria</option>
+                )}
+                {selectableMachines.map((historyMachine) => (
+                  <option key={historyMachine} value={historyMachine}>
+                    {historyMachine}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
           {showQuantityField ? (
             <label className="machine-field">
               <span>Tempo de acionamento</span>
@@ -822,29 +835,6 @@ export default function App() {
             </label>
           ) : null}
 
-          {machineSuggestions.length ? (
-            <div className="machine-suggestions" aria-label="Historico de maquinas">
-              {machineSuggestions.map((historyMachine) => (
-                <div className="machine-suggestion-item" key={historyMachine}>
-                  <button
-                    className="machine-suggestion-button"
-                    type="button"
-                    onClick={() => handleMachineSuggestionClick(historyMachine)}
-                  >
-                    {historyMachine}
-                  </button>
-                  <button
-                    className="machine-remove-button"
-                    type="button"
-                    aria-label={`Remover ${historyMachine} do historico`}
-                    onClick={() => handleMachineSuggestionRemove(historyMachine)}
-                  >
-                    x
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : null}
         </div>
 
         <div className="title-row">
@@ -914,31 +904,11 @@ export default function App() {
               aria-label="Configuracoes"
               onClick={() => setShowSettingsMenu((current) => !current)}
             >
-              ...
+              <span aria-hidden="true">⋯</span>
             </button>
 
             {showSettingsMenu ? (
               <div className="settings-menu">
-                <button
-                  className="settings-menu-item"
-                  type="button"
-                  onClick={() => {
-                    setShowAccessField(true)
-                    setShowSettingsMenu(false)
-                  }}
-                >
-                  Alterar acesso
-                </button>
-                <button
-                  className="settings-menu-item"
-                  type="button"
-                  onClick={() => {
-                    setShowMachineField(true)
-                    setShowSettingsMenu(false)
-                  }}
-                >
-                  Alterar maquina
-                </button>
                 <button
                   className="settings-menu-item"
                   type="button"
@@ -948,6 +918,38 @@ export default function App() {
                   }}
                 >
                   Alterar tempo de acionamento
+                </button>
+                <button
+                  className="settings-menu-item"
+                  type="button"
+                  onClick={() => {
+                    setShowMachineField(false)
+                    setShowMachineSelect(true)
+                    setShowSettingsMenu(false)
+                  }}
+                >
+                  Alterar maquina
+                </button>
+                <button
+                  className="settings-menu-item"
+                  type="button"
+                  onClick={() => {
+                    setShowMachineSelect(false)
+                    setShowMachineField(true)
+                    setShowSettingsMenu(false)
+                  }}
+                >
+                  Nova maquina
+                </button>
+                <button
+                  className="settings-menu-item"
+                  type="button"
+                  onClick={() => {
+                    setShowAccessField(true)
+                    setShowSettingsMenu(false)
+                  }}
+                >
+                  Alterar acesso
                 </button>
               </div>
             ) : null}

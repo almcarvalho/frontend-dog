@@ -20,7 +20,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -40,7 +41,7 @@ input {
   box-shadow: 0 20px 60px rgba(37, 99, 235, 0.16);
   backdrop-filter: blur(14px);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .machine-header {
@@ -55,50 +56,13 @@ input {
   color: #1d4ed8;
 }
 
-.machine-field input {
+.machine-field input,
+.machine-field select {
   width: 100%;
   border: 1px solid #93c5fd;
   border-radius: 14px;
   padding: 12px 14px;
   background: rgba(255, 255, 255, 0.94);
-}
-
-.machine-suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.machine-suggestion-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px 6px 12px;
-  border-radius: 999px;
-  background: rgba(239, 246, 255, 0.96);
-  border: 1px solid rgba(37, 99, 235, 0.14);
-}
-
-.machine-suggestion-button,
-.machine-remove-button {
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-}
-
-.machine-suggestion-button {
-  color: #1d4ed8;
-  font-weight: 700;
-}
-
-.machine-remove-button {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  color: #b91c1c;
-  font-size: 0.78rem;
-  line-height: 1;
 }
 
 .machine-chip {
@@ -216,6 +180,7 @@ h1 {
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 14px;
   margin-top: 28px;
   align-items: flex-start;
@@ -251,7 +216,10 @@ h1 {
 }
 
 .icon-button {
+  display: inline-grid;
+  place-items: center;
   min-width: 52px;
+  min-height: 52px;
   border: 1px solid rgba(37, 99, 235, 0.15);
   border-radius: 18px;
   padding: 14px 16px;
@@ -259,7 +227,8 @@ h1 {
   color: #1d4ed8;
   cursor: pointer;
   font-weight: 700;
-  letter-spacing: 1px;
+  font-size: 1.8rem;
+  line-height: 1;
   transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
@@ -281,6 +250,8 @@ h1 {
 
 .settings-menu-wrapper {
   position: relative;
+  flex: none;
+  z-index: 2;
 }
 
 .settings-menu {
@@ -293,7 +264,7 @@ h1 {
   background: rgba(255, 255, 255, 0.98);
   border: 1px solid rgba(37, 99, 235, 0.12);
   box-shadow: 0 18px 30px rgba(37, 99, 235, 0.12);
-  z-index: 10;
+  z-index: 20;
 }
 
 .settings-menu-item {
@@ -451,10 +422,18 @@ h1 {
   }
 
   .title-row,
-  .actions,
   .scheduler {
     grid-template-columns: 1fr;
     display: grid;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .settings-menu-wrapper {
+    justify-self: end;
   }
 
   .schedule-card-top {
