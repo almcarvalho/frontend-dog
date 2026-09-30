@@ -1064,7 +1064,7 @@ export default function App() {
             onClick={handleRelease}
             disabled={releasing || !activeMachine || !normalizedApiKey}
           >
-            {releasing ? 'Liberando...' : 'Liberar racao'}
+            {releasing ? 'Liberando...' : 'ACIONAR'}
           </button>
 
           <button
@@ -1076,7 +1076,7 @@ export default function App() {
             }}
             disabled={!activeMachine}
           >
-            {showScheduler ? 'Fechar agendamento' : 'Agendar'}
+            {showScheduler ? 'Fechar agendamento' : 'AGENDAR'}
           </button>
 
           <div className="settings-menu-wrapper">
@@ -1190,7 +1190,7 @@ export default function App() {
                 type="submit"
                 disabled={scheduling || !date || !time || !activeMachine}
               >
-                {scheduling ? 'Agendando...' : 'Agendar'}
+                {scheduling ? 'Agendando...' : 'AGENDAR'}
               </button>
             </form>
 
