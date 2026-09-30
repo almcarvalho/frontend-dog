@@ -398,6 +398,183 @@ function getScheduleId(schedule, index) {
   return schedule?.id || schedule?._id || schedule?.uuid || `${schedule?.data || 'item'}-${index}`
 }
 
+function DevicesScreen({ apiKey, onBack }) {
+  const [devices, setDevices] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [refreshCount, setRefreshCount] = useState(0)
+  const [pendingRemoval, setPendingRemoval] = useState('')
+  const [removing, setRemoving] = useState(false)
+  const [removalError, setRemovalError] = useState('')
+  const [removalMessage, setRemovalMessage] = useState('')
+
+  function getDeviceMachine(device) {
+    return device?.machine || device?.name || device?.nome || ''
+  }
+
+  async function handleRemoveDevice() {
+    if (!pendingRemoval || removing || !apiKey) return
+
+    setRemoving(true)
+    setRemovalError('')
+    setRemovalMessage('')
+
+    try {
+      const response = await fetch(buildUrl('/devices', { machine: pendingRemoval }), {
+        method: 'DELETE',
+        headers: getHeaders(apiKey),
+      })
+      if (!response.ok) {
+        throw new Error(await readResponseMessage(response, 'Não foi possível remover a máquina.'))
+      }
+
+      setDevices((current) => current.filter((device) => getDeviceMachine(device) !== pendingRemoval))
+      setRemovalMessage(`Máquina ${pendingRemoval} removida.`)
+      setPendingRemoval('')
+    } catch (err) {
+      setRemovalError(err.message || 'Não foi possível conectar ao servidor.')
+    } finally {
+      setRemoving(false)
+    }
+  }
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function fetchDevices() {
+      setLoading(true)
+      setError('')
+
+      try {
+        const response = await fetch(buildUrl('/devices', {}), {
+          headers: getHeaders(apiKey),
+          signal: controller.signal,
+        })
+        if (!response.ok) {
+          throw new Error('Não foi possível carregar os dispositivos.')
+        }
+
+        const data = await response.json()
+        const list = Array.isArray(data) ? data : data?.devices ?? data?.items
+        if (!Array.isArray(list)) {
+          throw new Error('A resposta dos dispositivos está em um formato inválido.')
+        }
+
+        if (!controller.signal.aborted) setDevices(list)
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          setError(err.message || 'Não foi possível conectar ao servidor.')
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false)
+      }
+    }
+
+    fetchDevices()
+    return () => controller.abort()
+  }, [apiKey, refreshCount])
+
+  return (
+    <main className="app-shell">
+      <section className="panel devices-panel" aria-labelledby="devices-title">
+        <div className="title-row">
+          <h1 id="devices-title">Dispositivos</h1>
+          <button className="secondary-button" type="button" onClick={onBack}>
+            Voltar
+          </button>
+        </div>
+        <div className="actions">
+          <button
+            className="secondary-button"
+            type="button"
+            disabled={loading || removing}
+            onClick={() => {
+              setPendingRemoval('')
+              setRemovalError('')
+              setRemovalMessage('')
+              setRefreshCount((current) => current + 1)
+            }}
+          >
+            {loading ? 'Carregando...' : 'Atualizar'}
+          </button>
+        </div>
+        {pendingRemoval ? (
+          <div className="device-removal-confirmation" role="group" aria-labelledby="removal-question" aria-busy={removing}>
+            <p id="removal-question">Remover a máquina <strong>{pendingRemoval}</strong>?</p>
+            <div className="actions">
+              <button className="danger-button" type="button" disabled={removing || !apiKey} onClick={handleRemoveDevice}>
+                {removing ? 'Removendo...' : 'Confirmar remoção'}
+              </button>
+              <button className="secondary-button" type="button" disabled={removing} onClick={() => {
+                setPendingRemoval('')
+                setRemovalError('')
+              }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : null}
+        {removalError ? <p className="feedback error" role="alert">{removalError}</p> : null}
+        {removalMessage ? <p className="feedback success" role="status">{removalMessage}</p> : null}
+        <div aria-live="polite" aria-busy={loading}>
+          {loading ? <p className="info-text">Carregando dispositivos...</p> : null}
+          {error ? <p className="feedback error" role="alert">{error}</p> : null}
+          {!loading && !error ? (
+            devices.length ? (
+              <table className="devices-table">
+                <thead>
+                  <tr><th scope="col">Nome</th><th scope="col">Status</th><th scope="col" className="device-actions">Ações</th></tr>
+                </thead>
+                <tbody>
+                  {devices.map((device, index) => {
+                    const rawStatus = device?.status ?? device?.online
+                    const status = typeof rawStatus === 'boolean'
+                      ? rawStatus ? 'Online' : 'Offline'
+                      : typeof rawStatus === 'string' && rawStatus.trim()
+                        ? rawStatus.trim()
+                        : 'Desconhecido'
+                    const statusClass = ['online', 'offline'].includes(status.toLowerCase())
+                      ? status.toLowerCase()
+                      : 'unknown'
+
+                    return (
+                      <tr key={device?.id ?? device?._id ?? index}>
+                        <td>{device?.name || device?.nome || device?.machine || 'Sem nome'}</td>
+                        <td>
+                          <span className="device-status">
+                            <span className={`status-dot ${statusClass}`} aria-hidden="true" />
+                            {status}
+                          </span>
+                        </td>
+                        <td className="device-actions">
+                          <button
+                            className="device-remove-button"
+                            type="button"
+                            aria-label={`Remover máquina ${getDeviceMachine(device)}`}
+                            title="Remover máquina"
+                            disabled={removing || !apiKey || !getDeviceMachine(device)}
+                            onClick={() => {
+                              setPendingRemoval(getDeviceMachine(device))
+                              setRemovalError('')
+                              setRemovalMessage('')
+                            }}
+                          >
+                            <span aria-hidden="true">×</span>
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            ) : <p className="info-text">Nenhum dispositivo encontrado.</p>
+          ) : null}
+        </div>
+      </section>
+    </main>
+  )
+}
+
 export default function App() {
   const [apiKey, setApiKey] = useState(() => getInitialApiKey())
   const [savedApiKey, setSavedApiKey] = useState(() => getInitialApiKey())
@@ -429,6 +606,7 @@ export default function App() {
   const [repeat, setRepeat] = useState(false)
   const [countdown, setCountdown] = useState(null)
   const [showSettingsMenu, setShowSettingsMenu] = useState(false)
+  const [showDevices, setShowDevices] = useState(false)
 
   const normalizedMachine = machine.trim()
   const activeMachine = savedMachine.trim()
@@ -766,6 +944,10 @@ export default function App() {
     status?.tempoRestanteParaProximaLiberacao ||
     (status?.hasScheduledRelease ? 'agendada' : null)
 
+  if (showDevices) {
+    return <DevicesScreen apiKey={savedApiKey.trim()} onBack={() => setShowDevices(false)} />
+  }
+
   return (
     <main className="app-shell">
       <section className="panel">
@@ -950,6 +1132,16 @@ export default function App() {
                   }}
                 >
                   Alterar acesso
+                </button>
+                <button
+                  className="settings-menu-item"
+                  type="button"
+                  onClick={() => {
+                    setShowDevices(true)
+                    setShowSettingsMenu(false)
+                  }}
+                >
+                  Dispositivos
                 </button>
               </div>
             ) : null}
